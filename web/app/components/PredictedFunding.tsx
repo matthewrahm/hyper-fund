@@ -117,6 +117,16 @@ export default function PredictedFunding() {
           </table>
         </div>
       )}
+
+      <div className="mt-4 rounded-lg p-3" style={{ background: "rgba(255,255,255,0.02)" }}>
+        <p className="text-xs text-muted leading-relaxed">
+          <span className="text-loss">Negative %</span> = perp trading below spot. Shorts pay longs. Good for longing (you earn funding).
+          <br />
+          <span className="text-profit">Positive %</span> = perp trading above spot. Longs pay shorts. Good for shorting (you earn funding).
+          <br />
+          Rates shown are annualized from the predicted next hourly settlement.
+        </p>
+      </div>
     </section>
   );
 }
