@@ -1,36 +1,30 @@
+"use client";
+
+import { useState } from "react";
+import Header from "./components/Header";
+import SpreadTable from "./components/SpreadTable";
+
 export default function Dashboard() {
+  const [selectedCoin, setSelectedCoin] = useState<string | null>(null);
+
   return (
     <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
-      {/* Header */}
-      <header className="mb-8 flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-semibold tracking-tight text-primary">
-            hyper-fund
-          </h1>
-          <p className="mt-1 text-sm text-muted">
-            Cross-exchange funding rate scanner
-          </p>
-        </div>
-      </header>
+      <Header />
+      <SpreadTable
+        onSelectCoin={setSelectedCoin}
+        selectedCoin={selectedCoin}
+      />
 
-      {/* Spread Leaderboard */}
-      <section className="card p-5 mb-6">
-        <div className="label mb-4">Funding Rate Spreads</div>
-        <p className="text-sm text-secondary">Loading spreads...</p>
-      </section>
-
-      {/* Predicted Funding */}
+      {/* Predicted Funding - Phase 4 */}
       <section className="card p-5 mb-6">
         <div className="label mb-4">Predicted Funding</div>
-        <p className="text-sm text-secondary">Loading predicted rates...</p>
+        <p className="text-sm text-secondary">Coming soon</p>
       </section>
 
-      {/* Address Lookup */}
+      {/* Address Lookup - Phase 5 */}
       <section className="card p-5">
         <div className="label mb-4">Funding Cost Calculator</div>
-        <p className="text-sm text-secondary">
-          Enter a Hyperliquid address to view funding costs
-        </p>
+        <p className="text-sm text-secondary">Coming soon</p>
       </section>
     </div>
   );

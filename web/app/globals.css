@@ -44,6 +44,27 @@
   color: var(--color-muted);
 }
 
+/* Table styles */
+.table-header {
+  text-transform: uppercase;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.5px;
+  color: var(--color-muted);
+  padding: 8px 12px;
+}
+
+.table-cell {
+  padding: 10px 12px;
+  font-size: 13px;
+  color: var(--color-secondary);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.table-row:hover .table-cell {
+  background: rgba(255, 255, 255, 0.03);
+}
+
 /* Monospace numbers */
 .num {
   font-family: var(--font-mono);
