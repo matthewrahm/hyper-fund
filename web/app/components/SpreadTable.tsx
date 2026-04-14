@@ -1,7 +1,8 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback } from "react";
 import { getSpreads, type FundingSpread } from "@/lib/api";
+import { useAutoRefresh } from "@/app/hooks/useAutoRefresh";
 import ExchangeBadge from "./ExchangeBadge";
 import NumberCell from "./NumberCell";
 
@@ -12,15 +13,8 @@ export default function SpreadTable({
   onSelectCoin: (coin: string | null) => void;
   selectedCoin: string | null;
 }) {
-  const [spreads, setSpreads] = useState<FundingSpread[]>([]);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    getSpreads(20)
-      .then(setSpreads)
-      .catch(() => {})
-      .finally(() => setLoading(false));
-  }, []);
+  const fetchSpreads = useCallback(() => getSpreads(20), []);
+  const { data: spreads, loading } = useAutoRefresh(fetchSpreads, 30_000);
 
   return (
     <section className="card p-5 mb-6">
@@ -32,7 +26,7 @@ export default function SpreadTable({
             <div key={i} className="skeleton h-10 w-full" />
           ))}
         </div>
-      ) : spreads.length === 0 ? (
+      ) : !spreads || spreads.length === 0 ? (
         <p className="py-8 text-center text-sm text-muted">No spread data available</p>
       ) : (
         <div className="overflow-x-auto">

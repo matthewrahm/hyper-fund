@@ -2,6 +2,7 @@
 
 ![Python](https://img.shields.io/badge/Python-3.11+-3776AB?logo=python&logoColor=white)
 ![Hyperliquid](https://img.shields.io/badge/Hyperliquid-API-00C853)
+![Next.js](https://img.shields.io/badge/Next.js-16-000000?logo=next.js&logoColor=white)
 ![Telegram](https://img.shields.io/badge/Telegram-Bot-26A5E4?logo=telegram&logoColor=white)
 ![License](https://img.shields.io/badge/License-MIT-yellow)
 
@@ -47,95 +48,130 @@ Annualized return formula: `spread_per_hour * 24 * 365`
 ## Architecture
 
 ```
-Telegram Bot
-    |
-    v
-Command Handlers ---- FundingAggregator ---- TTLCache
-    |                    /    |    \
-    v                   v     v     v
-AlertManager     HyperliquidClient  CexClient (OKX, Gate.io)
-    |                   |               |
-    v                   v               v
-~/.hyper-fund/     api.hyperliquid.xyz   ccxt async
-alerts.json
+Web Dashboard (Next.js)          Telegram Bot
+         |                            |
+         v                            v
+    FastAPI REST ---- FundingAggregator ---- TTLCache
+                        /    |    \
+                       v     v     v
+                HyperliquidClient  CexClient (OKX, Gate.io)
+                       |               |
+                       v               v
+                api.hyperliquid.xyz   ccxt async
 ```
 
 ## Tech Stack
 
 | Layer | Technology |
 |-------|-----------|
-| Language | Python 3.11+ |
-| Package Manager | uv |
+| Frontend | Next.js 16, React 19, Tailwind v4 |
+| API | FastAPI, uvicorn |
+| Data Layer | Python 3.11+ |
 | Hyperliquid API | hyperliquid-python-sdk + httpx |
 | CEX APIs | ccxt (async) |
 | Telegram | python-telegram-bot v22 |
 | Caching | In-memory TTL cache (30-60s) |
-| Persistence | JSON file for alerts |
 
 ## Getting Started
 
 ### Prerequisites
 
 - Python 3.11+
+- Node.js 18+
 - [uv](https://docs.astral.sh/uv/) package manager
-- Telegram bot token from [@BotFather](https://t.me/BotFather)
 
 ### Install
 
 ```bash
-git clone https://github.com/yourusername/hyper-fund.git
+git clone https://github.com/matthewrahm/hyper-fund.git
 cd hyper-fund
+cd web && npm install && cd ..
+```
+
+### Run (Web Dashboard)
+
+```bash
+# Option 1: Both servers at once
+./scripts/dev.sh
+
+# Option 2: Separately
+uv run uvicorn api.main:app --reload --port 8000
+cd web && npm run dev
+```
+
+Open http://localhost:3000
+
+### Run (Telegram Bot)
+
+```bash
 cp .env.example .env
+# Add your TELEGRAM_BOT_TOKEN to .env
+uv run hyper-fund
 ```
 
 ### Configure
 
 | Variable | Required | Description |
 |----------|----------|-------------|
-| `TELEGRAM_BOT_TOKEN` | Yes | Token from @BotFather |
+| `TELEGRAM_BOT_TOKEN` | For Telegram bot | Token from @BotFather |
+| `NEXT_PUBLIC_API_URL` | Optional | FastAPI URL (default: http://localhost:8000) |
 
-Edit `.env` with your bot token.
+## API Endpoints
 
-### Run
+| Endpoint | Description |
+|----------|-------------|
+| `GET /api/spreads?limit=20` | Top funding rate spreads |
+| `GET /api/rates` | All rates across exchanges |
+| `GET /api/rates/{coin}` | Rates for a specific coin |
+| `GET /api/predicted` | Predicted next funding rates |
+| `GET /api/cost/{address}` | Funding cost for HL address |
+| `GET /api/health` | Exchange connectivity status |
 
-```bash
-uv run hyper-fund
-```
-
-## Commands
+## Telegram Commands
 
 | Command | Description |
 |---------|-------------|
 | `/funding` | Top 15 cross-exchange funding spreads |
-| `/funding SOL` | Detailed rates for a coin across all exchanges |
-| `/predicted` | Predicted next funding rates, sorted by magnitude |
-| `/cost 0x...` | Hourly/daily/monthly funding cost for a Hyperliquid address |
-| `/alert SOL 4.0` | Alert when SOL spread exceeds 4.0 basis points |
+| `/funding SOL` | Detailed rates for a coin |
+| `/predicted` | Predicted next funding rates |
+| `/cost 0x...` | Funding cost for a Hyperliquid address |
+| `/alert SOL 4.0` | Alert when spread exceeds threshold |
 | `/alert list` | View active alerts |
 | `/alert remove SOL` | Remove an alert |
-| `/help` | Command reference |
 
 ## Project Structure
 
 ```
 hyper-fund/
-  pyproject.toml            # Dependencies and project metadata
-  .env.example              # Environment variable template
-  scripts/
-    test_hl.py              # Standalone Hyperliquid test
-    test_cex.py             # Cross-exchange aggregation test
-  src/hyper_fund/
-    main.py                 # Bot entry point
-    models.py               # FundingRate, FundingSpread dataclasses
-    core.py                 # FundingAggregator (merges all exchanges)
-    cache.py                # TTL cache for API responses
-    alerts.py               # Alert manager with JSON persistence
+  pyproject.toml              # Python dependencies
+  api/                        # FastAPI backend
+    main.py                   # App setup, CORS, lifespan
+    routes.py                 # REST endpoint handlers
+    schemas.py                # Pydantic response models
+  src/hyper_fund/             # Core data layer
+    core.py                   # FundingAggregator
+    models.py                 # FundingRate, FundingSpread
+    cache.py                  # TTL cache
+    alerts.py                 # Alert manager
     exchanges/
-      hyperliquid.py        # Hyperliquid client (SDK + raw REST)
-      cex.py                # CEX client via ccxt async
+      hyperliquid.py          # Hyperliquid client
+      cex.py                  # CEX client (ccxt)
     bot/
-      handlers.py           # Telegram command handlers
-      formatters.py         # Message formatting
+      handlers.py             # Telegram handlers
+      formatters.py           # Message formatting
+  web/                        # Next.js frontend
+    app/
+      page.tsx                # Dashboard page
+      globals.css             # Design system tokens
+      components/             # UI components
+      hooks/                  # useAutoRefresh
+    lib/
+      api.ts                  # Typed API client
+      utils.ts                # Formatters, helpers
+  scripts/
+    dev.sh                    # Run both servers
+    test_hl.py                # Hyperliquid test
+    test_cex.py               # Cross-exchange test
 ```
 
 ## License

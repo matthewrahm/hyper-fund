@@ -1,22 +1,16 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback } from "react";
 import { getPredicted, type PredictedCoin } from "@/lib/api";
+import { useAutoRefresh } from "@/app/hooks/useAutoRefresh";
 import SectionHeading from "./SectionHeading";
 import NumberCell from "./NumberCell";
 
 const VENUES = ["Hyperliquid", "Binance", "Bybit"];
 
 export default function PredictedFunding() {
-  const [predicted, setPredicted] = useState<PredictedCoin[]>([]);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    getPredicted()
-      .then(setPredicted)
-      .catch(() => {})
-      .finally(() => setLoading(false));
-  }, []);
+  const fetchPredicted = useCallback(() => getPredicted(), []);
+  const { data: predicted, loading } = useAutoRefresh(fetchPredicted, 30_000);
 
   return (
     <section className="card p-5 mb-6">
@@ -28,7 +22,7 @@ export default function PredictedFunding() {
             <div key={i} className="skeleton h-8 w-full" />
           ))}
         </div>
-      ) : predicted.length === 0 ? (
+      ) : !predicted || predicted.length === 0 ? (
         <p className="py-4 text-center text-sm text-muted">
           No predicted funding data
         </p>
