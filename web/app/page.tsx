@@ -5,6 +5,7 @@ import Header from "./components/Header";
 import SpreadTable from "./components/SpreadTable";
 import CoinDetail from "./components/CoinDetail";
 import PredictedFunding from "./components/PredictedFunding";
+import AddressLookup from "./components/AddressLookup";
 
 export default function Dashboard() {
   const [selectedCoin, setSelectedCoin] = useState<string | null>(null);
@@ -25,12 +26,7 @@ export default function Dashboard() {
       )}
 
       <PredictedFunding />
-
-      {/* Address Lookup - Phase 5 */}
-      <section className="card p-5">
-        <div className="label mb-4">Funding Cost Calculator</div>
-        <p className="text-sm text-secondary">Coming soon</p>
-      </section>
+      <AddressLookup />
     </div>
   );
 }
