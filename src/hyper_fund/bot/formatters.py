@@ -126,6 +126,29 @@ def format_cost(cost_data: dict) -> str:
     return f"<pre>{chr(10).join(lines)}</pre>"
 
 
+def format_alert_notification(coin: str, spread_bps: float, threshold_bps: float) -> str:
+    """Format an alert notification."""
+    ann = spread_bps / 10_000 * 24 * 365 * 100
+    return (
+        f"<b>ALERT: {coin}</b>\n"
+        f"Spread: {spread_bps:.1f}bp ({ann:.1f}% ann)\n"
+        f"Threshold: {threshold_bps:.1f}bp"
+    )
+
+
+def format_alert_list(alerts) -> str:
+    """Format the user's active alerts."""
+    if not alerts:
+        return "No active alerts. Use /alert COIN THRESHOLD to set one."
+
+    lines = ["<b>Active Alerts</b>", ""]
+    for a in alerts:
+        lines.append(f"  {a.coin:<8} > {a.threshold_bps:.1f}bp")
+    lines.append("")
+    lines.append("<i>/alert remove COIN to delete</i>")
+    return "\n".join(lines)
+
+
 def format_help() -> str:
     """Format the help message."""
     return (

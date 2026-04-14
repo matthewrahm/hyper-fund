@@ -4,7 +4,14 @@ import logging
 from dotenv import load_dotenv
 from telegram.ext import Application, CommandHandler
 
-from hyper_fund.bot.handlers import help_handler, funding_handler, predicted_handler, cost_handler
+from hyper_fund.bot.handlers import (
+    help_handler,
+    funding_handler,
+    predicted_handler,
+    cost_handler,
+    alert_handler,
+    check_alerts_job,
+)
 
 
 logging.basicConfig(
@@ -29,6 +36,10 @@ def main():
     app.add_handler(CommandHandler("funding", funding_handler))
     app.add_handler(CommandHandler("predicted", predicted_handler))
     app.add_handler(CommandHandler("cost", cost_handler))
+    app.add_handler(CommandHandler("alert", alert_handler))
+
+    # Background alert checking every 60 seconds
+    app.job_queue.run_repeating(check_alerts_job, interval=60, first=10)
 
     logger.info("Hyper-Fund bot starting...")
     app.run_polling()
