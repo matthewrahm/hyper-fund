@@ -36,14 +36,22 @@ export default function AddressLookup() {
 
   return (
     <section className="card p-5">
-      <SectionHeading>Funding Cost Calculator</SectionHeading>
+      <SectionHeading>Position Funding Tracker</SectionHeading>
+
+      {!costData && (
+        <p className="text-sm text-secondary mb-4">
+          Paste any Hyperliquid wallet address to see how much funding is costing
+          or earning across all open positions. Funding is a hidden cost that
+          compounds over time on leveraged trades.
+        </p>
+      )}
 
       <form onSubmit={handleSubmit} className="flex gap-3 mb-5">
         <input
           type="text"
           value={address}
           onChange={(e) => setAddress(e.target.value)}
-          placeholder="0x..."
+          placeholder="Hyperliquid wallet address (0x...)"
           className="flex-1 rounded-lg border border-[rgba(255,255,255,0.10)] bg-transparent px-3 py-2 font-mono text-sm text-primary placeholder:text-[#555] transition-colors focus:border-accent focus:outline-none focus:ring-2 focus:ring-[rgba(99,102,241,0.15)] hover:border-[rgba(255,255,255,0.20)]"
         />
         <button
