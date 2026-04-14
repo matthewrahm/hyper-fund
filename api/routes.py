@@ -61,9 +61,13 @@ async def get_spreads(
 
 
 @router.get("/rates", response_model=list[FundingRateResponse])
-async def get_rates(request: Request):
+async def get_rates(
+    request: Request,
+    exchanges: str = Query(default="", description="Comma-separated exchange names to filter"),
+):
     agg = _get_agg(request)
-    rates = await agg.get_all_rates()
+    ex_filter = [e.strip() for e in exchanges.split(",") if e.strip()] or None
+    rates = await agg.get_all_rates(ex_filter)
     return [
         FundingRateResponse(
             coin=r.coin,

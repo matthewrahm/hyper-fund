@@ -78,8 +78,12 @@ export function getExchanges() {
   return fetchAPI<{ exchanges: string[]; dexs: string[] }>("/api/exchanges");
 }
 
-export function getRates() {
-  return fetchAPI<FundingRate[]>("/api/rates");
+export function getRates(exchanges?: string[]) {
+  let url = "/api/rates";
+  if (exchanges && exchanges.length > 0) {
+    url += `?exchanges=${exchanges.join(",")}`;
+  }
+  return fetchAPI<FundingRate[]>(url);
 }
 
 export function getCoinRates(coin: string) {

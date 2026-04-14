@@ -8,8 +8,25 @@ import NumberCell from "./NumberCell";
 
 const VENUES = ["Hyperliquid", "Binance", "Bybit"];
 
+// Only show coins people actually care about
+const MAJOR_COINS = new Set([
+  "BTC", "ETH", "SOL", "XRP", "BNB", "ADA", "DOGE", "LINK", "AVAX",
+  "DOT", "SUI", "APT", "ARB", "OP", "NEAR", "RENDER", "TAO", "INJ",
+  "HYPE", "TIA", "JUP", "WIF", "PENDLE", "AAVE", "UNI", "LTC",
+  // HIP-3 majors
+  "xyz:GOLD", "xyz:SILVER", "xyz:CL", "xyz:BRENTOIL", "xyz:NATGAS",
+  "xyz:COPPER", "xyz:SP500", "xyz:TSLA", "xyz:NVDA", "xyz:AAPL",
+  "xyz:GOOGL", "xyz:AMZN", "xyz:META", "xyz:MSFT", "xyz:EUR", "xyz:JPY",
+  "km:GOLD", "km:SILVER", "km:USOIL", "km:US500", "km:USTECH",
+  "flx:GOLD", "flx:OIL", "flx:USA500",
+]);
+
 export default function PredictedFunding() {
-  const fetchPredicted = useCallback(() => getPredicted(), []);
+  const fetchPredicted = useCallback(async () => {
+    const all = await getPredicted();
+    // Filter to majors, then sort by magnitude
+    return all.filter((p) => MAJOR_COINS.has(p.coin));
+  }, []);
   const { data: predicted, loading } = useAutoRefresh(fetchPredicted, 30_000);
 
   return (
@@ -40,7 +57,7 @@ export default function PredictedFunding() {
               </tr>
             </thead>
             <tbody>
-              {predicted.slice(0, 15).map((p) => {
+              {predicted.map((p) => {
                 const venueMap = new Map(
                   p.venues.map((v) => [v.venue, v])
                 );
