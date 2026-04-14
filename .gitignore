@@ -1,0 +1,12 @@
+.env
+.venv/
+__pycache__/
+*.pyc
+*.pyo
+dist/
+*.egg-info/
+.claude/
+CLAUDE.md
+AGENTS.md
+.uv/
+uv.lock

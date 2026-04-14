@@ -1,0 +1,14 @@
+[project]
+name = "hyper-fund"
+version = "0.1.0"
+description = "Hyperliquid funding rate scanner — cross-exchange funding aggregation and alerts via Telegram"
+requires-python = ">=3.11"
+dependencies = [
+    "hyperliquid-python-sdk>=0.22",
+    "httpx>=0.27",
+    "python-dotenv>=1.0",
+]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
