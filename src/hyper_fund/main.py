@@ -42,6 +42,9 @@ def main():
     app.job_queue.run_repeating(check_alerts_job, interval=60, first=10)
 
     logger.info("Hyper-Fund bot starting...")
+    logger.info("Exchanges: Hyperliquid, Binance*, Bybit*, OKX, Gate.io")
+    logger.info("  (* via Hyperliquid predicted funding cross-venue data)")
+    logger.info("Alert check interval: 60s | Alert cooldown: 30m")
     app.run_polling()
 
 
