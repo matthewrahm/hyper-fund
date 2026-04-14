@@ -10,3 +10,6 @@ CLAUDE.md
 AGENTS.md
 .uv/
 uv.lock
+web/node_modules/
+web/.next/
+web/.env.local
