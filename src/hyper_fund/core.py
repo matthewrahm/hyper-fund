@@ -1,15 +1,23 @@
 import asyncio
+import logging
 from collections import defaultdict
 
 from hyper_fund.exchanges.hyperliquid import HyperliquidClient
 from hyper_fund.exchanges.cex import CexClient
 from hyper_fund.models import FundingRate, FundingSpread
+from hyper_fund.cache import TTLCache
+
+logger = logging.getLogger(__name__)
+
+# Cache TTLs in seconds
+HL_CACHE_TTL = 30
+CEX_CACHE_TTL = 60
+USER_CACHE_TTL = 15
 
 
 class FundingAggregator:
     """Aggregates funding rates across Hyperliquid and CEXs."""
 
-    # Map predictedFundings venue names to display names
     VENUE_MAP = {
         "BinPerp": "Binance",
         "BybitPerp": "Bybit",
@@ -22,14 +30,21 @@ class FundingAggregator:
             CexClient("okx"),
             CexClient("gate"),
         ]
+        self._cache = TTLCache()
+        self.failed_exchanges: list[str] = []
 
     def _get_hl_data(self) -> tuple[list[FundingRate], list[FundingRate]]:
-        """Fetch HL rates and predicted cross-venue rates.
+        """Fetch HL rates and predicted cross-venue rates."""
+        cached = self._cache.get("hl_data")
+        if cached is not None:
+            return cached
 
-        Returns (hl_rates, predicted_rates) where predicted_rates
-        includes BinPerp/BybitPerp data from HL's predictedFundings.
-        """
-        raw = self.hl.get_funding_rates()
+        try:
+            raw = self.hl.get_funding_rates()
+        except Exception as e:
+            logger.error(f"Hyperliquid rates failed: {e}")
+            return [], []
+
         hl_rates = [
             FundingRate(
                 coin=r["coin"],
@@ -43,8 +58,12 @@ class FundingAggregator:
             for r in raw
         ]
 
-        # Predicted funding includes BinPerp and BybitPerp rates
-        predicted = self.hl.get_predicted_funding()
+        try:
+            predicted = self.hl.get_predicted_funding()
+        except Exception as e:
+            logger.error(f"Hyperliquid predicted funding failed: {e}")
+            predicted = []
+
         predicted_rates = []
         for entry in predicted:
             for v in entry["venues"]:
@@ -60,30 +79,46 @@ class FundingAggregator:
                         interval_hours=v["interval_hours"],
                     ))
 
-        return hl_rates, predicted_rates
+        result = (hl_rates, predicted_rates)
+        self._cache.set("hl_data", result, HL_CACHE_TTL)
+        return result
+
+    async def _get_cex_rates(self, client: CexClient) -> list[FundingRate]:
+        """Fetch rates from a CEX with caching and error handling."""
+        cache_key = f"cex_{client.exchange_id}"
+        cached = self._cache.get(cache_key)
+        if cached is not None:
+            return cached
+
+        try:
+            rates = await client.get_funding_rates()
+            self._cache.set(cache_key, rates, CEX_CACHE_TTL)
+            return rates
+        except Exception as e:
+            logger.error(f"{client.display_name} failed: {e}")
+            self.failed_exchanges.append(client.display_name)
+            return []
 
     async def get_all_rates(self) -> list[FundingRate]:
-        """Fetch funding rates from all exchanges concurrently.
+        """Fetch funding rates from all exchanges concurrently."""
+        self.failed_exchanges = []
 
-        Uses direct API for Hyperliquid, OKX, Gate.io.
-        Uses HL's predictedFundings for Binance/Bybit rates.
-        """
         loop = asyncio.get_event_loop()
         hl_task = loop.run_in_executor(None, self._get_hl_data)
-
-        cex_tasks = [client.get_funding_rates() for client in self.cex_clients]
+        cex_tasks = [self._get_cex_rates(client) for client in self.cex_clients]
 
         results = await asyncio.gather(hl_task, *cex_tasks, return_exceptions=True)
 
         all_rates = []
 
-        # HL data (tuple of hl_rates, predicted_rates)
         if not isinstance(results[0], Exception):
             hl_rates, predicted_rates = results[0]
             all_rates.extend(hl_rates)
             all_rates.extend(predicted_rates)
+        else:
+            logger.error(f"Hyperliquid failed: {results[0]}")
+            self.failed_exchanges.append("Hyperliquid")
 
-        # CEX data
         for result in results[1:]:
             if isinstance(result, Exception):
                 continue
@@ -92,14 +127,9 @@ class FundingAggregator:
         return all_rates
 
     async def get_top_spreads(self, n: int = 10) -> list[FundingSpread]:
-        """Find top N funding rate spreads across exchanges.
-
-        For each coin available on 2+ exchanges, computes the spread
-        between the highest and lowest funding rate.
-        """
+        """Find top N funding rate spreads across exchanges."""
         rates = await self.get_all_rates()
 
-        # Group by coin
         by_coin: dict[str, list[FundingRate]] = defaultdict(list)
         for r in rates:
             by_coin[r.coin].append(r)
@@ -109,10 +139,9 @@ class FundingAggregator:
             if len(coin_rates) < 2:
                 continue
 
-            # Sort by hourly rate
             coin_rates.sort(key=lambda r: r.rate)
-            lowest = coin_rates[0]   # best to go long (pay least / earn most)
-            highest = coin_rates[-1]  # best to go short (earn most)
+            lowest = coin_rates[0]
+            highest = coin_rates[-1]
 
             spread = highest.rate - lowest.rate
             if spread <= 0:
