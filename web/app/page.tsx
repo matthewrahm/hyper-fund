@@ -3,6 +3,8 @@
 import { useState } from "react";
 import Header from "./components/Header";
 import SpreadTable from "./components/SpreadTable";
+import CoinDetail from "./components/CoinDetail";
+import PredictedFunding from "./components/PredictedFunding";
 
 export default function Dashboard() {
   const [selectedCoin, setSelectedCoin] = useState<string | null>(null);
@@ -15,11 +17,14 @@ export default function Dashboard() {
         selectedCoin={selectedCoin}
       />
 
-      {/* Predicted Funding - Phase 4 */}
-      <section className="card p-5 mb-6">
-        <div className="label mb-4">Predicted Funding</div>
-        <p className="text-sm text-secondary">Coming soon</p>
-      </section>
+      {selectedCoin && (
+        <CoinDetail
+          coin={selectedCoin}
+          onClose={() => setSelectedCoin(null)}
+        />
+      )}
+
+      <PredictedFunding />
 
       {/* Address Lookup - Phase 5 */}
       <section className="card p-5">
