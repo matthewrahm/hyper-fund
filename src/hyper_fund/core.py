@@ -54,6 +54,7 @@ class FundingAggregator:
                 interval_hours=1,
                 mark_price=r["mark_price"],
                 open_interest=r["open_interest"],
+                dex=r.get("dex", "Hyperliquid"),
             )
             for r in raw
         ]
@@ -99,7 +100,15 @@ class FundingAggregator:
             self.failed_exchanges.append(client.display_name)
             return []
 
-    async def get_all_rates(self) -> list[FundingRate]:
+    def get_all_exchanges(self) -> list[str]:
+        """Return all exchange names available."""
+        return ["Hyperliquid", "Binance", "Bybit", "OKX", "Gate.io"]
+
+    def get_all_dexs(self) -> list[str]:
+        """Return all HIP-3 DEX names."""
+        return list(self.hl.DEX_NAMES.values())
+
+    async def get_all_rates(self, exchanges: list[str] | None = None) -> list[FundingRate]:
         """Fetch funding rates from all exchanges concurrently."""
         self.failed_exchanges = []
 
@@ -124,11 +133,16 @@ class FundingAggregator:
                 continue
             all_rates.extend(result)
 
+        # Filter by exchange if specified
+        if exchanges:
+            exchanges_set = set(exchanges)
+            all_rates = [r for r in all_rates if r.exchange in exchanges_set]
+
         return all_rates
 
-    async def get_top_spreads(self, n: int = 10) -> list[FundingSpread]:
+    async def get_top_spreads(self, n: int = 10, exchanges: list[str] | None = None) -> list[FundingSpread]:
         """Find top N funding rate spreads across exchanges."""
-        rates = await self.get_all_rates()
+        rates = await self.get_all_rates(exchanges)
 
         by_coin: dict[str, list[FundingRate]] = defaultdict(list)
         for r in rates:

@@ -8,6 +8,7 @@ export interface FundingRate {
   interval_hours: number;
   mark_price: number;
   open_interest: number;
+  dex: string;
 }
 
 export interface FundingSpread {
@@ -65,8 +66,16 @@ async function fetchAPI<T>(path: string): Promise<T> {
   return res.json();
 }
 
-export function getSpreads(limit = 20) {
-  return fetchAPI<FundingSpread[]>(`/api/spreads?limit=${limit}`);
+export function getSpreads(limit = 20, exchanges?: string[]) {
+  let url = `/api/spreads?limit=${limit}`;
+  if (exchanges && exchanges.length > 0) {
+    url += `&exchanges=${exchanges.join(",")}`;
+  }
+  return fetchAPI<FundingSpread[]>(url);
+}
+
+export function getExchanges() {
+  return fetchAPI<{ exchanges: string[]; dexs: string[] }>("/api/exchanges");
 }
 
 export function getRates() {

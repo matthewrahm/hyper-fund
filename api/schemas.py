@@ -9,6 +9,7 @@ class FundingRateResponse(BaseModel):
     interval_hours: int
     mark_price: float
     open_interest: float
+    dex: str
 
 
 class FundingSpreadResponse(BaseModel):

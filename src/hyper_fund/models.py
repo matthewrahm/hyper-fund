@@ -10,6 +10,7 @@ class FundingRate:
     interval_hours: int  # funding interval (1h for HL, 4h or 8h for CEXs)
     mark_price: float = 0.0
     open_interest: float = 0.0
+    dex: str = ""  # HIP-3 deployer name (e.g. "Trade[XYZ]"), empty for CEXs
 
 
 @dataclass

@@ -9,11 +9,16 @@ import NumberCell from "./NumberCell";
 export default function SpreadTable({
   onSelectCoin,
   selectedCoin,
+  exchanges,
 }: {
   onSelectCoin: (coin: string | null) => void;
   selectedCoin: string | null;
+  exchanges: string[];
 }) {
-  const fetchSpreads = useCallback(() => getSpreads(20), []);
+  const fetchSpreads = useCallback(
+    () => getSpreads(20, exchanges.length > 0 ? exchanges : undefined),
+    [exchanges]
+  );
   const { data: spreads, loading } = useAutoRefresh(fetchSpreads, 30_000);
 
   return (

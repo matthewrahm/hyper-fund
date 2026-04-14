@@ -27,10 +27,24 @@ def _get_agg(request: Request) -> FundingAggregator:
     return request.app.state.aggregator
 
 
-@router.get("/spreads", response_model=list[FundingSpreadResponse])
-async def get_spreads(request: Request, limit: int = Query(default=20, ge=1, le=100)):
+@router.get("/exchanges")
+async def get_exchanges(request: Request):
     agg = _get_agg(request)
-    spreads = await agg.get_top_spreads(limit)
+    return {
+        "exchanges": agg.get_all_exchanges(),
+        "dexs": agg.get_all_dexs(),
+    }
+
+
+@router.get("/spreads", response_model=list[FundingSpreadResponse])
+async def get_spreads(
+    request: Request,
+    limit: int = Query(default=20, ge=1, le=100),
+    exchanges: str = Query(default="", description="Comma-separated exchange names to filter"),
+):
+    agg = _get_agg(request)
+    ex_filter = [e.strip() for e in exchanges.split(",") if e.strip()] or None
+    spreads = await agg.get_top_spreads(limit, ex_filter)
     return [
         FundingSpreadResponse(
             coin=s.coin,
@@ -59,6 +73,7 @@ async def get_rates(request: Request):
             interval_hours=r.interval_hours,
             mark_price=r.mark_price,
             open_interest=r.open_interest,
+            dex=r.dex,
         )
         for r in rates
     ]
@@ -79,6 +94,7 @@ async def get_coin_rates(request: Request, coin: str):
             interval_hours=r.interval_hours,
             mark_price=r.mark_price,
             open_interest=r.open_interest,
+            dex=r.dex,
         )
         for r in rates
     ]
