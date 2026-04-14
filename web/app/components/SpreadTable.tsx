@@ -3,6 +3,7 @@
 import { useCallback } from "react";
 import { getSpreads, getRates, type FundingSpread, type FundingRate } from "@/lib/api";
 import { useAutoRefresh } from "@/app/hooks/useAutoRefresh";
+import { isMajor } from "@/lib/majors";
 import ExchangeBadge from "./ExchangeBadge";
 import NumberCell from "./NumberCell";
 
@@ -24,8 +25,8 @@ export default function SpreadTable({
   const fetchData = useCallback(async (): Promise<TableData> => {
     if (singleExchange) {
       const rates = await getRates(exchanges);
-      // Sort by absolute rate, take top 20
       const sorted = rates
+        .filter((r) => isMajor(r.coin))
         .sort((a, b) => Math.abs(b.rate) - Math.abs(a.rate))
         .slice(0, 20);
       return { mode: "rates", data: sorted };
