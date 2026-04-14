@@ -60,6 +60,72 @@ def format_coin_detail(coin: str, rates: list[FundingRate]) -> str:
     return f"<pre>{chr(10).join(lines)}</pre>"
 
 
+def format_predicted(predicted: list[dict]) -> str:
+    """Format predicted funding rates across venues."""
+    if not predicted:
+        return "No predicted funding data."
+
+    lines = [
+        "PREDICTED FUNDING (next period)",
+        "",
+    ]
+
+    for entry in predicted[:15]:
+        if not entry["venues"]:
+            continue
+
+        coin = entry["coin"]
+        venue_parts = []
+        for v in entry["venues"]:
+            hourly = v["rate"] / v["interval_hours"]
+            ann = hourly * 24 * 365 * 100
+            label = v["venue"].replace("Perp", "")
+            venue_parts.append(f"{label}: {ann:+.0f}%")
+
+        lines.append(f"{coin:<8} {' | '.join(venue_parts)}")
+
+    return f"<pre>{chr(10).join(lines)}</pre>"
+
+
+def format_cost(cost_data: dict) -> str:
+    """Format funding cost breakdown for a user's positions."""
+    positions = cost_data["positions"]
+    if not positions:
+        return "No open positions found for this address."
+
+    lines = [
+        "FUNDING COST BREAKDOWN",
+        "",
+        f"Account Value: ${cost_data['account_value']:,.2f}",
+        "",
+        f"{'Coin':<8} {'Side':<6} {'Size':>10} {'Rate/h':>10} {'$/hr':>10}",
+        "-" * 46,
+    ]
+
+    for p in sorted(positions, key=lambda x: abs(x["hourly_cost"]), reverse=True):
+        lines.append(
+            f"{p['coin']:<8} "
+            f"{p['side']:<6} "
+            f"{p['size']:>10,.2f} "
+            f"{p['funding_rate']:>+10.6f} "
+            f"{p['hourly_cost']:>+10.2f}"
+        )
+
+    lines.append("-" * 46)
+    h = cost_data["total_hourly"]
+    d = cost_data["total_daily"]
+    m = cost_data["total_monthly"]
+    lines.append(f"Hourly:  ${h:+,.2f}")
+    lines.append(f"Daily:   ${d:+,.2f}")
+    lines.append(f"Monthly: ${m:+,.2f}")
+
+    if h > 0:
+        lines.append("")
+        lines.append("(+) = you are paying  (-) = you are earning")
+
+    return f"<pre>{chr(10).join(lines)}</pre>"
+
+
 def format_help() -> str:
     """Format the help message."""
     return (

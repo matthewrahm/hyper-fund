@@ -4,7 +4,7 @@ import logging
 from dotenv import load_dotenv
 from telegram.ext import Application, CommandHandler
 
-from hyper_fund.bot.handlers import help_handler, funding_handler
+from hyper_fund.bot.handlers import help_handler, funding_handler, predicted_handler, cost_handler
 
 
 logging.basicConfig(
@@ -27,6 +27,8 @@ def main():
     app.add_handler(CommandHandler("help", help_handler))
     app.add_handler(CommandHandler("start", help_handler))
     app.add_handler(CommandHandler("funding", funding_handler))
+    app.add_handler(CommandHandler("predicted", predicted_handler))
+    app.add_handler(CommandHandler("cost", cost_handler))
 
     logger.info("Hyper-Fund bot starting...")
     app.run_polling()

@@ -76,3 +76,61 @@ class HyperliquidClient:
             end_time: Optional end timestamp in ms
         """
         return self.info.funding_history(coin, start_time, end_time)
+
+    def get_user_state(self, address: str) -> dict:
+        """Fetch clearinghouse state for a user address.
+
+        Returns positions, margin, equity, etc.
+        """
+        return self.info.user_state(address)
+
+    def get_user_funding_cost(self, address: str) -> dict:
+        """Calculate current hourly funding cost for a user's positions.
+
+        Returns {positions: [{coin, size, side, mark_price, funding_rate, hourly_cost}],
+                 total_hourly, total_daily, total_monthly}.
+        """
+        state = self.get_user_state(address)
+        rates_list = self.get_funding_rates()
+        rates_map = {r["coin"]: r for r in rates_list}
+
+        positions = []
+        total_hourly = 0.0
+
+        for pos in state.get("assetPositions", []):
+            p = pos.get("position", {})
+            coin = p.get("coin", "")
+            size = float(p.get("szi", "0"))
+
+            rate_info = rates_map.get(coin)
+            if size == 0 or rate_info is None:
+                continue
+
+            mark_px = rate_info["mark_price"]
+            if mark_px == 0:
+                continue
+
+            funding_rate = rate_info["funding_rate"]
+            # Funding payment = size * oracle_price * funding_rate
+            # Positive funding + long position = you pay
+            # Positive funding + short position = you earn
+            hourly_cost = size * mark_px * funding_rate
+
+            positions.append({
+                "coin": coin,
+                "size": abs(size),
+                "side": "LONG" if size > 0 else "SHORT",
+                "mark_price": mark_px,
+                "funding_rate": funding_rate,
+                "hourly_cost": hourly_cost,
+            })
+
+            total_hourly += hourly_cost
+
+        return {
+            "positions": positions,
+            "total_hourly": total_hourly,
+            "total_daily": total_hourly * 24,
+            "total_monthly": total_hourly * 24 * 30,
+            "account_value": float(state.get("marginSummary", {}).get("accountValue", "0")),
+        }
